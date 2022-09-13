@@ -46,6 +46,13 @@ namespace OCTREE {
         }
     };
 
+
+    struct sVolumeOctree {
+        sMacroVoxel *raw_data;
+
+        uint16_t level_count = 0;
+    };
+
     inline void generate_octree_on_volume(const sRawVolume &volume) {
         assert("Ofr now this method only works for square, poer of 2 textures");
         uint32_t base_it = volume.width / 2;
@@ -165,7 +172,7 @@ namespace OCTREE {
         assert(volume.width == volume.depth &&
                volume.width == volume.heigth &&
                IS_POWER_OF_TWO(volume.width) &&
-               "Error while generating quadtree, non square and power of two text");
+               "Error while generating octree, non square and power of two text");
         // Generate size of the stack
         uint32_t num_blocks = 0;
         uint32_t it_blocks = volume.width;
@@ -190,7 +197,7 @@ namespace OCTREE {
         }
 
 
-        // Start quadtree generation
+        // Start octree generation
         it_blocks = base_size;
         uint32_t prev_level_state = 0;
         uint32_t last_level_padding = base_size * base_size_squared;
