@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cassert>
 #include <cstdlib>
-
+#include <cmath>
 
 #include <iostream>
 namespace OCTREE {
@@ -40,7 +40,7 @@ namespace OCTREE {
         inline eVoxelState get_pixel_state(const uint16_t x,
                                            const uint16_t y,
                                            const uint16_t z) const {
-            uint8_t value = raw_volume[4 * (x + y * width + z * heigth * width) + 4];
+            uint8_t value = raw_volume[(x + y * width + z * heigth * width)];
 
             return (value > density_threshold) ? FULL_VOXEL : EMPTY_VOXEL;
         }
@@ -51,6 +51,18 @@ namespace OCTREE {
         sMacroVoxel *raw_data;
 
         uint16_t level_count = 0;
+        uint32_t last_index = 0;
+
+        inline bool is_full_at(const uint16_t level,
+                               const uint16_t octant) {
+            uint32_t level_padding = 0;
+            uint32_t level_it = level;
+            while(level_it > 0) {
+                level_padding += powf(powf(2.0f, level_it+2.0f), 3.0);
+                level_it--;
+            }
+             return false;
+        }
     };
 
     inline void generate_octree_on_volume(const sRawVolume &volume) {
@@ -168,7 +180,7 @@ namespace OCTREE {
 
     #define IS_POWER_OF_TWO(x) ((x & (x - 1)) == 0)
 
-    inline void generate_octree(const sRawVolume &volume) {
+    inline sVolumeOctree generate_octree(const sRawVolume &volume) {
         assert(volume.width == volume.depth &&
                volume.width == volume.heigth &&
                IS_POWER_OF_TWO(volume.width) &&
@@ -199,9 +211,11 @@ namespace OCTREE {
 
         // Start octree generation
         it_blocks = base_size;
+        uint16_t level_count = 0;
         uint32_t prev_level_state = 0;
         uint32_t last_level_padding = base_size * base_size_squared;
         while(it_blocks > 1) {
+            level_count++;
             uint32_t last_block_size = it_blocks;
             uint32_t last_block_size_squared = last_block_size * last_block_size;
             it_blocks = it_blocks / 2;
@@ -243,6 +257,8 @@ namespace OCTREE {
                 octree_storage[last_level_padding + i] = {.state = macro_voxel_state};
             }
         }
+
+        return {.raw_data = octree_storage, .level_count = level_count, .last_index = num_blocks};
     }
 
 };

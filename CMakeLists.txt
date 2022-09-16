@@ -33,12 +33,11 @@ if( MSVC )
 endif()
 
  if( MSVC )
-    set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT phys_sandbox)
+    set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT OCTREE_VOL)
 endif()
 
 
 include_directories(
-    "libmorton/include/"
     "includes/"
   )
 
