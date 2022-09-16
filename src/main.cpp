@@ -11,6 +11,7 @@
 #include "cube_renderer.h"
 #include "generation.h"
 #include "camera.h"
+#include "libmorton/morton.h"
 #include "octree.h"
 
 
@@ -110,6 +111,11 @@ void render_frame(GLFWwindow *window) {
 }
 
 int main(int argc, char *argv[]) {
+    // Morton code test
+
+    std::cout << libmorton::morton3D_32_encode(1, 1, 1) << " + " << libmorton::morton3D_64_encode(10, 20, 10) << " = " << libmorton::morton3D_32_encode(11, 21, 11) << std::endl;
+
+
     // Init GL3W and GLFW
     if (!glfwInit()) {
         return EXIT_FAILURE;

@@ -9,7 +9,7 @@
 #include <iostream>
 namespace OCTREE {
 
-    enum eVoxelState : uint8_t {
+    enum eVoxelState : uint32_t {
         EMPTY_VOXEL = 0, // Leaf
         FULL_VOXEL,      // Leaf
         HALF_VOXEL,       // branch

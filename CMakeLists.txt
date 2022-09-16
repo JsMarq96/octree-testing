@@ -38,6 +38,7 @@ endif()
 
 
 include_directories(
+  "libmorton/include/"
     "includes/"
   )
 
