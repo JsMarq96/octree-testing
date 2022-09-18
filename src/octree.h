@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstring>
 
-#include <libmorton/morton.h>
+#include "libmorton/morton.h"
 #include <type_traits>
 
 namespace OCTREE {
@@ -98,7 +98,7 @@ namespace OCTREE {
         sTreeLayer *prev_layer = NULL;
     };
 
-    inline void generate(const sRawVolume &volume) {
+    inline sOctreeNode* generate(const sRawVolume &volume) {
         assert(volume.width == volume.depth &&
                volume.width == volume.heigth &&
                IS_POWER_OF_TWO(volume.width) &&
@@ -120,8 +120,10 @@ namespace OCTREE {
         sOctreeNode *octree = (sOctreeNode*) malloc(sizeof(sOctreeNode) * num_blocks);
 
         uint32_t base_layer_start = num_blocks - base_voxel_count;
+
+        uint32_t fullsize = 0;
         // Store the children in each base with morton ordering
-        for(uint32_t i = 0; i < base_voxel_count; i--) {
+        for(uint32_t i = 0; i < base_voxel_count; i++) {
             uint16_t x = i % base_width;
             uint16_t y = (i / base_width) % base_width;
             uint16_t z = i / (base_squared);
@@ -130,7 +132,16 @@ namespace OCTREE {
             octree[morton_index].type = volume.get_pixel_state(x,
                                                                y,
                                                                z);
+
+            //std::cout << x << ", " << y << ", " << z << std::endl;
+            if (octree[morton_index].type == FULL_VOXEL) {
+                fullsize++;
+                //std::cout << " full p" << i << std::endl;
+            }
         }
+
+        std::cout << "full size: " << fullsize << std::endl;
+
 
         uint32_t prev_layer_start_index = base_layer_start;
         uint32_t it_base = 256;
@@ -180,7 +191,7 @@ namespace OCTREE {
                                                                                   child_z + z) + prev_layer_start_index;
 
                              // TODO this kinde of morton test can be encoded on a LUT
-                             octree[base_voxel_index].children[child_pos_LUT[x + y * 2 + y * 4]] = child_index;
+                             octree[base_voxel_index].children[child_pos_LUT[x + y * 2 + z * 4]] = child_index;
 
                              eVoxelState new_state = (eVoxelState) octree[child_index].type;
                              if (base_state == TBD_VOXEL) {
@@ -196,15 +207,19 @@ namespace OCTREE {
                  }
 
                  octree[base_voxel_index].type = (eVoxelState) base_state;
+
+                 if (base_state == FULL_VOXEL) {
+                     fullsize -= 7;
+                 }
             }
 
             layer_index -= curr_base_size;
+            prev_layer_start_index = curr_base_start;
         }
 
-        std::cout << octree[0].type << std::endl;
+        std::cout << "full size: " << fullsize << std::endl;
 
-        uint32_t voxels_inside = 0;
-
+        return octree;
     }
 };
 

@@ -35,7 +35,7 @@ namespace OCTREE {
         uint16_t heigth = 0;
         uint16_t depth = 0;
 
-        uint8_t density_threshold = 39;
+        uint8_t density_threshold = 9;
 
         inline eVoxelState get_pixel_state(const uint16_t x,
                                            const uint16_t y,
@@ -44,6 +44,13 @@ namespace OCTREE {
 
             return (value > density_threshold) ? FULL_VOXEL : EMPTY_VOXEL;
         }
+
+        inline uint8_t get_pixel(const uint16_t x,
+                                 const uint16_t y,
+                                 const uint16_t z) const {
+            return raw_volume[(x + y * width + z * heigth * width)];
+        }
+
     };
 
 
