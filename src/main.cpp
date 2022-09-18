@@ -12,8 +12,7 @@
 #include "generation.h"
 #include "camera.h"
 #include "glm/ext/matrix_transform.hpp"
-#include "libmorton/morton.h"
-#include "octree.h"
+#include "octree_1.h"
 
 
 #define WIN_WIDTH	740
@@ -31,32 +30,6 @@ void glfw_error_callback(int error_code, const char* decscr) {
 
 
 
-// TODO: limit the number of levels
-void iterate_quadtree(const OCTREE::sOctreeNode *octree,
-                      const uint32_t curr_index,
-                      const uint32_t curr_level,
-                      const glm::vec3 vect) {
-    std::cout << octree[curr_index].type << std::endl;
-    if (octree[curr_index].type == OCTREE::FULL_VOXEL) {
-       //std::cout << curr_level << " <- " << p++ << " " << glm::to_string(vect) << std::endl;
-        //cubes_model[cubes_count] = glm::scale(glm::mat4(1.0f), glm::vec3{1.0f, 1.0f, 1.0f} / ((float) curr_level * 2.0f));
-        cubes_model[cubes_count] = glm::translate(glm::mat4(1.0f), vect * 10.0f);
-        cubes_model[cubes_count] = glm::scale(cubes_model[cubes_count], glm::vec3{1.0f, 1.0f, 1.0f} / (float) curr_level);
-        cubes_count++;
-        return;
-    }
-
-    if (octree[curr_index].type == OCTREE::HALF_VOXEL ) {
-        // If its mixed, we continue
-        for(uint32_t i = 0; i < 8; i++) {
-            iterate_quadtree(octree,
-                             octree[curr_index].children[i],
-                             curr_level+1,
-                             vect - (position_LUT[i] / (float) curr_level));
-        }
-    }
-}
-
 void render_frame(GLFWwindow *window) {
     glfwMakeContextCurrent(window);
 
@@ -72,18 +45,10 @@ void render_frame(GLFWwindow *window) {
 
     cubes_model[0] = glm::mat4(1.0f);
 
-    for(uint32_t i = 0; i < 8; i++) {
-        uint_fast16_t x,y,z;
-
-        libmorton::morton3D_32_decode(i, x, y, z);
-        position_LUT[i] = {x, y, z };
-
-        //std::cout << i << ": " << x << ", " << y << ", " << z << std::endl;
-    }
 
     //std::cout << glm::to_string(position_LUT[1] / 7.0f) << std::endl;
 
-    FILE *file;
+    /*FILE *file;
 
     file = fopen("resources/volumes/bonsai_256x256x256_uint8.raw", "rb");
 
@@ -96,34 +61,14 @@ void render_frame(GLFWwindow *window) {
                                 .heigth = 256,
                                 .depth = 256, .density_threshold = 50};
 
-    fread(vol.raw_volume, file_size, 1, file);
+    fread(vol.raw_volume, file_size, 1, file);*/
 
-    uint32_t p = 0;
-    for(uint32_t i = 0; i < (256*256*256);i++) {
-        if (vol.raw_volume[i] < 50) {
-            p++;
-        }
-    }
-    std::cout << "Raw values out thresh: " <<  p << std::endl;
+    uint8_t values[] = { 0,0,0,23,   0,0,0,0,   0,0,0,0,   25,0,0,0  };
 
-    //return;
-    clock_t end_time, start_time = clock();
-    //OCTREE::sVolumeOctree octr = OCTREE::generate_octree(vol);
-    //OCTREE::ssssss
+    sRawVolume test_volume = { .raw_volume = values, .width = 4, .heigth = 4, .depth = 4, .density_threshold = 19};
+    octree_generation(test_volume);
 
-    uint8_t test [] = { 0, 0, 60, 20, 0, 0, 60, 20};
-    OCTREE::sRawVolume test_vol = { .raw_volume = test, .width = 2, .heigth = 2, .depth = 2, .density_threshold = 40 };
 
-    OCTREE::sOctreeNode *octree = OCTREE::generate(test_vol);
-    end_time = clock();
-
-    std::cout << (end_time - start_time) / (CLOCKS_PER_SEC / 1000) << std::endl;
-
-    iterate_quadtree(octree, 0, 1, {0.0f, 0.0f, 0.0f});
-
-    //return;
-    // Test bitpaclong
-    //
     std::cout << "Num of cubes extracted from octree: " <<  cubes_count << std::endl;
 
     while(!glfwWindowShouldClose(window)) {
@@ -167,9 +112,6 @@ void render_frame(GLFWwindow *window) {
 
 int main(int argc, char *argv[]) {
     // Morton code test
-
-    std::cout << libmorton::morton3D_32_encode(1, 1, 1) << " + " << libmorton::morton3D_64_encode(10, 20, 10) << " = " << libmorton::morton3D_32_encode(11, 21, 11) << std::endl;
-
 
     // Init GL3W and GLFW
     if (!glfwInit()) {
