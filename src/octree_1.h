@@ -124,8 +124,6 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
         octree[base_index + i].type = raw_vol.get_pixel_state(x,
                                                               y,
                                                               z);
-
-        //std::cout << octree[base_index + i].type << " " << x << ", " << y << ", " << z  << std::endl;
     }
 
     // Generate all the layers octree bottom-to-top
@@ -168,8 +166,6 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
         }
 
         octree[index].type = curr_voxel;
-
-        std::cout << curr_voxel << std::endl;
     }
 
 

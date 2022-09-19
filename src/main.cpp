@@ -63,7 +63,12 @@ void render_frame(GLFWwindow *window) {
 
     fread(vol.raw_volume, file_size, 1, file);*/
 
-    uint8_t values[] = { 0,0,0,23,   0,0,0,0,   0,0,0,0,   25,0,0,0  };
+    uint8_t values[] = {
+         0,0,23,23,   0, 0, 32,40,   0,0,0,0,   25,0,0,0 ,
+         0,0,23,23,    0,0,32,45,   0,0,0,0,   0,0,0,0,
+         0,0,0,0,    0,0,0,0,   0,0,0,0,   0,0,0,0,
+         0,0,0,0,    0,0,0,0,   0,0,0,0,   0,0,0,0,
+    };
 
     sRawVolume test_volume = { .raw_volume = values, .width = 4, .heigth = 4, .depth = 4, .density_threshold = 19};
     octree_generation(test_volume);
