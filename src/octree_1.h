@@ -128,46 +128,78 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
 
     // Generate all the layers octree bottom-to-top
     uint32_t current_level = level_count -2;
-    uint32_t layer_start = get_octree_index(level_count-2,
+    uint32_t layer_size = base_size;
+    uint32_t prev_layer_start = base_index;
+
+    while(current_level >= 1) {
+        layer_size /= 2;
+        uint32_t layer_area = layer_size * layer_size * layer_size;
+        // Get the starting index for the current level on the octree
+        uint32_t layer_start = get_octree_index(current_level,
                                             0,
                                             0,
                                             0);
 
-    uint32_t layer_size = base_size / 2;
-    uint32_t layer_area = layer_size * layer_size * layer_size;
-    uint32_t prev_layer_size = base_size;
-    uint32_t prev_layer_start = base_index;
-    for(uint32_t i = 0; i < layer_area; i++) {
-        const uint32_t x = i % layer_size;
-        const uint32_t y = (i / layer_size) % layer_size;
-        const uint32_t z = i / (layer_size * layer_size);
+        for(uint32_t i = 0; i < layer_area; i++) {
+            // For each voxel on the current level, read the children (the preovius level)
+            // and set the current voxel type accordingly
+            const uint32_t x = i % layer_size;
+            const uint32_t y = (i / layer_size) % layer_size;
+            const uint32_t z = i / (layer_size * layer_size);
 
-        uint32_t index = i + layer_start;
+            uint32_t index = i + layer_start;
+            eVoxelType curr_voxel = TBD_VOXEL;
 
-        fill_children_of_voxel(current_level,
-                               x,
-                               y,
-                               z,
-                               octree[layer_start + i].childs);
+            fill_children_of_voxel(current_level,
+                                   x,
+                                   y,
+                                   z,
+                                   octree[layer_start + i].childs);
 
-        eVoxelType curr_voxel = TBD_VOXEL;
+            for(uint8_t child_id = 0; child_id < 8; child_id++) {
+                eVoxelType child_state = octree[octree[index].childs[child_id]].type;
 
-        for(uint8_t child_id = 0; child_id < 8; child_id++) {
-            eVoxelType child_state = octree[octree[index].childs[child_id]].type;
+                if (curr_voxel == TBD_VOXEL) {
+                    curr_voxel = child_state;
+                }
 
-            if (curr_voxel == TBD_VOXEL) {
-                curr_voxel = child_state;
+                if (child_state == MIXED_VOXEL || child_state != curr_voxel) {
+                    curr_voxel = MIXED_VOXEL;
+                    break;
+                }
             }
 
-            if (child_state == MIXED_VOXEL || child_state != curr_voxel) {
-                curr_voxel = MIXED_VOXEL;
-                break;
-            }
+            octree[index].type = curr_voxel;
         }
 
-        octree[index].type = curr_voxel;
+        current_level--;
+        prev_layer_start = layer_start;
     }
 
+    // Compute last level (1)
+
+    eVoxelType curr_voxel = TBD_VOXEL;
+
+    fill_children_of_voxel(0,
+                           0,
+                           0,
+                           0,
+                           octree[0].childs);
+
+    for(uint8_t child_id = 0; child_id < 8; child_id++) {
+        eVoxelType child_state = octree[octree[0].childs[child_id]].type;
+
+        if (curr_voxel == TBD_VOXEL) {
+            curr_voxel = child_state;
+        }
+
+        if (child_state == MIXED_VOXEL || child_state != curr_voxel) {
+            curr_voxel = MIXED_VOXEL;
+            break;
+        }
+    }
+
+    octree[0].type = curr_voxel;
 
     return octree;
 }
