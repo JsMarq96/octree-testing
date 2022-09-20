@@ -44,50 +44,29 @@ struct sRawVolume {
 
 };
 
-inline uint32_t get_octree_index(const uint32_t curr_level,
-                                 const uint32_t x,
-                                 const uint32_t y,
-                                 const uint32_t z) {
-    // Early out
-    // TODO: speedup via LUT
-    if (curr_level == 0) {
-        return 0;
-    }
-    uint32_t index = 0;
-    for(uint32_t i = 0; i < curr_level; i++) {
-        uint32_t size = pow(2, i);
-        index += size*size*size;
-    }
-
-    return index;
-}
 
 inline void fill_children_of_voxel(const uint32_t curr_level,
                                    const uint32_t x,
                                    const uint32_t y,
                                    const uint32_t z,
+                                   const uint32_t padding,
                                    uint32_t *children) {
-    const uint32_t prev_level_start = get_octree_index(curr_level+1,
-                                                       0,
-                                                       0,
-                                                       0);
-    const uint32_t prev_level_size = pow(2,
-                                         curr_level+1);
+    uint32_t prev_width = pow(2, curr_level+1);
 
-    // Using some napkin math, to map the index to the previus index
-    const uint32_t x_prev = (x == 0) ? 0 : pow(2, x);
-    const uint32_t y_prev = (y == 0) ? 0 : pow(2, y);
-    const uint32_t z_prev = (z == 0)? 0 :pow(2, z);
+    uint32_t prev_x = x * 2;
+    uint32_t prev_y = y * 2;
+    uint32_t prev_z = z * 2;
 
     for(uint32_t z_delta = 0; z_delta < 2; z_delta++) {
         for(uint32_t y_delta = 0; y_delta < 2; y_delta++) {
             for(uint32_t x_delta = 0; x_delta < 2; x_delta++) {
-                children[x_delta + y_delta * 2 + z_delta * 4] = x_prev + x_delta +
-                                                                (y_prev + y_delta) * prev_level_size +
-                                                                (z_prev + z_delta) * (prev_level_size * prev_level_size) + prev_level_start;
+                uint32_t child_index = (x_delta + prev_x) + (y_delta + prev_y) * prev_width;
+                child_index += (z_delta + prev_z) * (prev_width * prev_width);
+                children[x_delta + y_delta * 2 + z_delta * 4] = child_index + padding;
             }
         }
     }
+
 }
 
 
@@ -115,7 +94,8 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
     // Populate the base of the octree
     const uint32_t base_size = raw_vol.width;
     const uint32_t base_area_size = raw_vol.width * raw_vol.width * raw_vol.width;
-    const uint32_t base_index = get_octree_index(level_count-1, 0, 0, 0);
+    const uint32_t base_index = octree_size - base_area_size;
+
     for(uint32_t i = 0; i < base_area_size; i++) {
         const uint32_t x = i % base_size;
         const uint32_t y = (i / base_size) % base_size;
@@ -135,10 +115,9 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
         layer_size /= 2;
         uint32_t layer_area = layer_size * layer_size * layer_size;
         // Get the starting index for the current level on the octree
-        uint32_t layer_start = get_octree_index(current_level,
-                                            0,
-                                            0,
-                                            0);
+        uint32_t layer_start = prev_layer_start - layer_area;
+
+        std::cout << current_level << " +=+++ " << std::endl;
 
         for(uint32_t i = 0; i < layer_area; i++) {
             // For each voxel on the current level, read the children (the preovius level)
@@ -154,7 +133,8 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
                                    x,
                                    y,
                                    z,
-                                   octree[layer_start + i].childs);
+                                   prev_layer_start,
+                                   octree[index].childs);
 
             for(uint8_t child_id = 0; child_id < 8; child_id++) {
                 eVoxelType child_state = octree[octree[index].childs[child_id]].type;
@@ -184,6 +164,7 @@ inline sVoxel* octree_generation(const sRawVolume &raw_vol) {
                            0,
                            0,
                            0,
+                           1,
                            octree[0].childs);
 
     for(uint8_t child_id = 0; child_id < 8; child_id++) {
