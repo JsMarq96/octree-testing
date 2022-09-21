@@ -13,6 +13,7 @@
 #include "camera.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "octree_1.h"
+#include "aabb_intersection.h"
 
 
 #define WIN_WIDTH	740
@@ -22,7 +23,7 @@
 glm::mat4 cubes_model[526 * 526];
 uint32_t cubes_count = 0;
 glm::vec3 octant_position_LUT[8] = {};
-
+int i=0;
 
 void glfw_error_callback(int error_code, const char* decscr) {
     std::cout << "GLTF ERROR: " << error_code << std::endl;
@@ -35,8 +36,8 @@ void iterate_ocrtree(const sVoxel* octree,
                      const glm::vec3 pos) {
     if (octree[curr_index].type != MIXED_VOXEL) {
         if (octree[curr_index].type == FULL_VOXEL) {
-            float curr_scale = 1.0f / (1.0f * curr_level);
-            cubes_model[cubes_count] = glm::scale(glm::translate(glm::mat4(1.0f), 20.0f * pos), {curr_scale, curr_scale, curr_scale});
+            float curr_scale = 1.0f / (curr_level);
+            cubes_model[cubes_count] = glm::scale(glm::translate(glm::mat4(1.0f), pos * 5.0f), {curr_scale, curr_scale, curr_scale});
             cubes_count++;
         }
         return;
@@ -47,7 +48,7 @@ void iterate_ocrtree(const sVoxel* octree,
                         octree[curr_index].childs[i],
                         curr_level + 1,
                         i,
-                        pos - (1.0f / (curr_level+1)) * octant_position_LUT[i]);
+                        pos + (1.0f / (curr_level)* octant_position_LUT[i]));
     }
 }
 
@@ -60,8 +61,8 @@ void render_frame(GLFWwindow *window) {
     renderer.init();
 
 
-    camera.position = {35.0f, 5.5, 35.0f};
-    camera.look_at({0.0f, 5.5f, 0.0f});
+    camera.position = {0.0f, 0.5, 10.0f};
+    camera.look_at({0.0f, 0.5f, 0.0f});
 
     glm::mat4 vp_mat = {};
 
@@ -100,15 +101,32 @@ void render_frame(GLFWwindow *window) {
          0,0,55,32,    0,0,0,0,   0,0,23,23,   0,0,23,23,
     };
 
-    sRawVolume test_volume = { .raw_volume = values, .width = 4, .heigth = 4, .depth = 4, .density_threshold = 19};
+    sRawVolume test_volume = { .raw_volume = values, .width = 4, .heigth = 4, .depth = 4, .density_threshold = 99};
     sVoxel* octree = octree_generation(vol);
+
+    std::cout << "Num of cubes extracted from octree: " <<  cubes_count << std::endl;
 
     uint32_t test_child[4] = {};
     fill_children_of_voxel(2, 1, 0, 0, 0,test_child);
     for(uint32_t i = 0; i< 4; i++) {
         std::cout << test_child[i] << " <-" << std::endl;
     }
-    iterate_ocrtree(octree, 0, 1, 0, {1,1,1});
+
+    cubes_model[0] = glm::mat4(1.0f);
+
+    glm::vec3 intersection_1, intersection_2;
+
+    ray_AABB_intersection({3, 0.5, 0.5},
+                          glm::normalize(glm::vec3{3, 0.5, 0.5} - glm::vec3{0.5, 0.5, 0.5}),
+                          {0,0,0},
+                          {1,1,1},
+                          &intersection_1,
+                          &intersection_2);
+
+    cubes_model[1] = glm::scale(glm::translate(glm::mat4(1.0), intersection_1), {0.05, 0.05, 0.05});
+    cubes_model[2] = glm::scale(glm::translate(glm::mat4(1.0), intersection_2), {0.05, 0.05, 0.05});
+    cubes_count += 3;
+    //iterate_ocrtree(octree, 0, 1, 0, {0,0,0});
 
     std::cout << "Num of cubes extracted from octree: " <<  cubes_count << std::endl;
 
