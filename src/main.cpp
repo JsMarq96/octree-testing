@@ -7,6 +7,7 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtx/string_cast.hpp>
+#include <chrono>
 
 #include "cube_renderer.h"
 #include "generation.h"
@@ -102,8 +103,10 @@ void render_frame(GLFWwindow *window) {
     };
 
     sRawVolume test_volume = { .raw_volume = values, .width = 4, .heigth = 4, .depth = 4, .density_threshold = 99};
+    auto begin = std::chrono::high_resolution_clock::now();
     sVoxel* octree = octree_generation(vol);
-
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Time on generation: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
     std::cout << "Num of cubes extracted from octree: " <<  cubes_count << std::endl;
 
     uint32_t test_child[4] = {};
@@ -116,8 +119,8 @@ void render_frame(GLFWwindow *window) {
 
     glm::vec3 intersection_1, intersection_2;
 
-    ray_AABB_intersection({3, 0.5, 0.5},
-                          glm::normalize(glm::vec3{3, 0.5, 0.5} - glm::vec3{0.5, 0.5, 0.5}),
+    ray_AABB_intersection({3, 2.5, 0.5},
+                          glm::normalize(glm::vec3{3, 2.5, 0.5} - glm::vec3{0.5, 0.5, 0.5}),
                           {0,0,0},
                           {1,1,1},
                           &intersection_1,
